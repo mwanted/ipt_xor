@@ -17,29 +17,15 @@ MODULE_DESCRIPTION("iptables XOR module");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("ipt_XOR");
 
-static inline void transform_k(char *buffer, uint32_t len, unsigned char key)
-{
-    unsigned i;
-    for (i = 0;i < len;i++) {
-        buffer[i] ^= key;
-    }
-}
-
-static inline void transform_ks(char *buffer, uint32_t len, const char* keys)
-{
-    unsigned key_len = strlen(keys);
-    unsigned i;
-    for (i = 0;i < len;i++) {
-        buffer[i] ^= keys[i % key_len];
-    }
-}
-
 static inline void transform(char *buffer, uint32_t len, const struct xt_xor_info *info)
 {
-    if (info->keys[0] > 0)
-        transform_ks(buffer, len, info->keys);
-    else
-        transform_k(buffer, len, info->key);
+    const unsigned char* key = info->key;
+    uint32_t key_len = info->key_len;
+
+    unsigned i;
+    for (i = 0;i < len;i++) {
+        buffer[i] ^= key[i % key_len];
+    }
 }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)

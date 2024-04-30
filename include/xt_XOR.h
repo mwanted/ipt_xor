@@ -1,11 +1,11 @@
 #ifndef _XT_XOR_H
 #define _XT_XOR_H
 
-#define XT_XOR_MAX_KEY_SIZE 64
+#define XT_XOR_MAX_KEY_SIZE 256
 
 struct xt_xor_info {
- unsigned char key;
- char keys[XT_XOR_MAX_KEY_SIZE + 1];
+    uint32_t key_len;
+    unsigned char key[XT_XOR_MAX_KEY_SIZE];
 };
 
 #endif /* _XT_XOR_H */

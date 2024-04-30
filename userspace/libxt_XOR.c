@@ -18,19 +18,19 @@
 #include <errno.h>
 #include "xt_XOR.h"
 
+#define _STRINGIFY(s) #s
+#define STRINGIFY(s) _STRINGIFY(s)
+
 enum {
     FLAGS_KEY = 1 << 0,
-    FLAGS_KEYS = 1 << 1,
 };
 
 enum {
     O_XOR_KEY = 0,
-    O_XOR_KEYS,
 };
 
 static const struct option xor_opts[] = {
     {.name = "key", .has_arg = true, .val = O_XOR_KEY},
-    {.name = "keys", .has_arg = true, .val = O_XOR_KEYS},
     {},
 };
 
@@ -38,8 +38,7 @@ static void xor_help(void)
 {
     printf(
             "XOR target options:\n"
-            "    --key <byte>\n"
-            "    --keys \"string\"\n"
+            "    --key <byte string>\n"
           );
 }
 
@@ -48,34 +47,34 @@ xor_parse(int c, char **argv, int invert, unsigned int *flags,
         const void *entry, struct xt_entry_target **target)
 {
     struct xt_xor_info *info = (void *)(*target)->data;
-    unsigned long k, len;
     const char *s = optarg;
-    switch (c) {
-        case O_XOR_KEY:
-            k = strtoul(s, NULL, 16);
-            if ( errno == EINVAL || errno == ERANGE || k > 0xff ) {
-                xtables_error(PARAMETER_PROBLEM, "XOR: key is one byte, like 0xab");
-            }
-            info->key = (unsigned char)k;
-            *flags |= FLAGS_KEY;
-            return true;
-        case O_XOR_KEYS:
-            len = strlen(s);
-            if (len > 0 && len <= XT_XOR_MAX_KEY_SIZE) {
-                strncpy(info->keys, s, XT_XOR_MAX_KEY_SIZE);
-                *flags |= FLAGS_KEYS;
-                return true;
-            }
-            xtables_error(PARAMETER_PROBLEM, "XOR: keys length, > 0 and <= 64");
+
+    unsigned char *dst = info->key;
+    unsigned char *end = info->key + sizeof(info->key);
+    unsigned int b;
+
+    while (dst < end && sscanf(s, "%2x", &b) == 1)
+    {
+        *dst++ = b;
+        info->key_len++;
+        s += 2;
     }
-    return false;
+
+    if (info->key_len == 0 || *s != '\0') {
+        xtables_error(PARAMETER_PROBLEM, "XOR: keys length, > 0 and <= " STRINGIFY(XT_XOR_MAX_KEY_SIZE));
+        return false;
+    }
+
+    *flags |= FLAGS_KEY;
+    return true;
 }
+
 static void xor_check(unsigned int flags)
 {
-    if ((flags & FLAGS_KEY) || (flags & FLAGS_KEYS))
+    if (flags & FLAGS_KEY)
         return;
     xtables_error(PARAMETER_PROBLEM, "XOR: "
-                "--key or --keys is required.");
+                "--key parameter is required.");
 }
 
     static void
@@ -83,20 +82,28 @@ xor_print(const void *entry, const struct xt_entry_target *target,
         int numeric)
 {
     const struct xt_xor_info *info = (const void *)target->data;
-    if (info->key > 0)
-        printf("  --key 0x%x ",info->key);
-    if (info->keys[0] > 0)
-        printf("  --keys \"%s\" ",info->keys);
+
+    const unsigned char* i = info->key;
+    const unsigned char* end = info->key + info->key_len;
+
+    printf(" --key ");
+    for (; i < end; ++i) {
+        printf("%02x", *i);
+    }
 }
 
     static void
 xor_save(const void *entry, const struct xt_entry_target *target)
 {
     const struct xt_xor_info *info = (const void *)target->data;
-    if (info->key > 0)
-        printf("  --key 0x%x ",info->key);
-    if (info->keys[0] > 0)
-        printf("  --keys \"%s\" ",info->keys);
+
+    const unsigned char* i = info->key;
+    const unsigned char* end = info->key + info->key_len;
+
+    printf(" --key ");
+    for (; i < end; ++i) {
+        printf("%02x", *i);
+    }
 }
 
 static struct xtables_target xor_reg[] = {
@@ -121,3 +128,6 @@ static __attribute__((constructor)) void init_xt_xor(void)
     xtables_register_targets(xor_reg,
             sizeof(xor_reg) / sizeof(*xor_reg));
 }
+
+#undef STRINGIFY
+#undef _STRINGIFY
