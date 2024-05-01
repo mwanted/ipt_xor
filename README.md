@@ -22,9 +22,7 @@ insmod xt_XOR.ko
 
 XOR takes one mandatory parameter.  
 
-`--key key-value` where key-value is a byte used to xor with packet payloads.
-
-`--keys '1234'` where 1234 is a string. Warning, don't use this with tcp because tcp is a stream.
+`--key '1234'` where 1234 is a byte string (As `5f6e == 0x5f, 0x6e`). Warning: don't use key of length > 1 with tcp, because tcp is a stream.
 
 ## Example
 
@@ -32,14 +30,14 @@ To use this target between hosts 1.2.3.4 and 1.2.3.5.
 
 ### (on host A, 1.2.3.4)
 ```bash
-iptables -t mangle -A OUTPUT -d 1.2.3.5 -p tcp --dport 1234 -j XOR --key 0x61
-iptables -t mangle -A INPUT -s 1.2.3.5 -p tcp --sport 1234 -j XOR --key 0x61
+iptables -t mangle -A OUTPUT -d 1.2.3.5 -p udp --dport 1234 -j XOR --key 6142
+iptables -t mangle -A INPUT -s 1.2.3.5 -p udp --sport 1234 -j XOR --key 6142
 ```
 
 ### (on host B, 1.2.3.5)
 ```bash
-iptables -t mangle -A OUTPUT -d 1.2.3.4 -p tcp --sport 1234 -j XOR --key 0x61
-iptables -t mangle -A INPUT -s 1.2.3.4 -p tcp --dport 1234 -j XOR --key 0x61
+iptables -t mangle -A OUTPUT -d 1.2.3.4 -p udp --sport 1234 -j XOR --key 6142
+iptables -t mangle -A INPUT -s 1.2.3.4 -p udp --dport 1234 -j XOR --key 6142
 ```
 
 ### Notice

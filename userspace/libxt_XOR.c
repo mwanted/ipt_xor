@@ -10,12 +10,9 @@
 #include <netinet/in.h>
 #include <getopt.h>
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <xtables.h>
 #include <linux/netfilter.h>
-#include <errno.h>
 #include "xt_XOR.h"
 
 #define _STRINGIFY(s) #s
@@ -42,8 +39,7 @@ static void xor_help(void)
           );
 }
 
-    static int
-xor_parse(int c, char **argv, int invert, unsigned int *flags,
+static int xor_parse(int c, char **argv, int invert, unsigned int *flags,
         const void *entry, struct xt_entry_target **target)
 {
     struct xt_xor_info *info = (void *)(*target)->data;
@@ -53,15 +49,15 @@ xor_parse(int c, char **argv, int invert, unsigned int *flags,
     unsigned char *end = info->key + sizeof(info->key);
     unsigned int b;
 
-    while (dst < end && sscanf(s, "%2x", &b) == 1)
-    {
+    while (dst < end && sscanf(s, "%2x", &b) == 1) {
         *dst++ = b;
         info->key_len++;
         s += 2;
     }
 
     if (info->key_len == 0 || *s != '\0') {
-        xtables_error(PARAMETER_PROBLEM, "XOR: keys length, > 0 and <= " STRINGIFY(XT_XOR_MAX_KEY_SIZE));
+        xtables_error(PARAMETER_PROBLEM, "XOR: "
+                "keys length, > 0 and <= " STRINGIFY(XT_XOR_MAX_KEY_SIZE));
         return false;
     }
 
@@ -73,13 +69,11 @@ static void xor_check(unsigned int flags)
 {
     if (flags & FLAGS_KEY)
         return;
-    xtables_error(PARAMETER_PROBLEM, "XOR: "
-                "--key parameter is required.");
+
+    xtables_error(PARAMETER_PROBLEM, "XOR: --key parameter is required.");
 }
 
-    static void
-xor_print(const void *entry, const struct xt_entry_target *target,
-        int numeric)
+static void xor_print(const void *entry, const struct xt_entry_target *target, int numeric)
 {
     const struct xt_xor_info *info = (const void *)target->data;
 
@@ -92,8 +86,7 @@ xor_print(const void *entry, const struct xt_entry_target *target,
     }
 }
 
-    static void
-xor_save(const void *entry, const struct xt_entry_target *target)
+static void xor_save(const void *entry, const struct xt_entry_target *target)
 {
     const struct xt_xor_info *info = (const void *)target->data;
 
@@ -125,8 +118,7 @@ static struct xtables_target xor_reg[] = {
 
 static __attribute__((constructor)) void init_xt_xor(void)
 {
-    xtables_register_targets(xor_reg,
-            sizeof(xor_reg) / sizeof(*xor_reg));
+    xtables_register_targets(xor_reg, sizeof(xor_reg) / sizeof(*xor_reg));
 }
 
 #undef STRINGIFY

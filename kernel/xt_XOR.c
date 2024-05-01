@@ -22,18 +22,15 @@ static inline void transform(char *buffer, uint32_t len, const struct xt_xor_inf
     const unsigned char* key = info->key;
     uint32_t key_len = info->key_len;
 
-    unsigned i;
-    for (i = 0;i < len;i++) {
+    for (uint32_t i = 0; i < len; ++i) {
         buffer[i] ^= key[i % key_len];
     }
 }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
-    static unsigned int
-xt_xor_target(struct sk_buff *skb, const struct xt_action_param *par)
+static unsigned int xt_xor_target(struct sk_buff *skb, const struct xt_action_param *par)
 #else
-    static unsigned int
-xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
+static unsigned int xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
 #endif
 {
     const struct xt_xor_info *info = par->targinfo;
@@ -45,12 +42,14 @@ xt_xor_target(struct sk_buff *skb, const struct xt_target_param *par)
     int ip_payload_len, data_len;
 
     iph = ip_hdr(skb);
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,3,0)
     if (unlikely(skb_ensure_writable(skb, ntohs(iph->tot_len))))
+        return NF_DROP;
 #else
     if (unlikely(!skb_make_writable(skb, ntohs(iph->tot_len))))
-#endif
         return NF_DROP;
+#endif
 
     iph = ip_hdr(skb);
     buf_pos = skb->data;
@@ -125,25 +124,27 @@ static bool xt_xor_checkentry(const struct xt_tgchk_param *par)
 }
 #endif
 
-static struct xt_target xt_xor = {
-    .name = "XOR",
-    .revision = 0,
-    .family = NFPROTO_IPV4,
-    .table = "mangle",
-    .target = xt_xor_target,
-    .targetsize = sizeof(struct xt_xor_info),
-    .checkentry = xt_xor_checkentry,
-    .me = THIS_MODULE,
+static struct xt_target xt_xor[] = {
+    {
+        .name = "XOR",
+        .revision = 0,
+        .family = NFPROTO_IPV4,
+        .table = "mangle",
+        .target = xt_xor_target,
+        .targetsize = sizeof(struct xt_xor_info),
+        .checkentry = xt_xor_checkentry,
+        .me = THIS_MODULE,
+    }
 };
 
 static int __init xor_tg_init(void)
 {
-    return xt_register_target(&xt_xor);
+    return xt_register_targets(xt_xor, ARRAY_SIZE(xt_xor));
 }
 
 static void __exit xor_target_exit(void)
 {
-    xt_unregister_target(&xt_xor);
+    xt_unregister_targets(xt_xor, ARRAY_SIZE(xt_xor));
 }
 
 module_init(xor_tg_init);
