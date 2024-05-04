@@ -23,7 +23,8 @@ static inline void transform(char *buffer, uint32_t len, const struct xt_xor_inf
     const unsigned char* key = info->key;
     uint32_t key_len = info->key_len;
 
-    for (uint32_t i = 0; i < len; ++i) {
+    uint32_t i;
+    for (i = 0; i < len; ++i) {
         buffer[i] ^= key[i % key_len];
     }
 }
@@ -53,18 +54,20 @@ static unsigned int xt_xor_target4(struct sk_buff *skb, const struct xt_target_p
 #endif
 
     iph = ip_hdr(skb);
-    buf_pos = skb->data;
-    buf_pos += iph->ihl*4;
+    buf_pos = skb->data + iph->ihl*4;
     ip_payload_len = skb->len - iph->ihl*4;
     
     if (iph->protocol == IPPROTO_TCP) {
         tcph = (struct tcphdr *)buf_pos;
         buf_pos += tcph->doff*4;
         data_len =  ip_payload_len - tcph->doff*4;
+
         if (unlikely(data_len < 0)) {
             return NF_DROP;
         }
+
         transform(buf_pos, data_len, info);
+
         if (skb->ip_summed != CHECKSUM_PARTIAL) {
             tcph->check = 0;
             tcph->check = csum_tcpudp_magic(iph->saddr, iph->daddr,
@@ -75,10 +78,13 @@ static unsigned int xt_xor_target4(struct sk_buff *skb, const struct xt_target_p
         udph = (struct udphdr *)buf_pos;
         buf_pos += sizeof(struct udphdr);
         data_len = ip_payload_len - sizeof(struct udphdr);
+
         if (unlikely(data_len < 0)) {
             return NF_DROP;
         }
+
         transform(buf_pos, data_len, info);
+
         if (skb->ip_summed != CHECKSUM_PARTIAL) {
             udph->check = 0;
             udph->check = csum_tcpudp_magic(iph->saddr, iph->daddr,
