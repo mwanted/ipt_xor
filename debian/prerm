@@ -1,2 +1,5 @@
 #!/bin/bash
 
+dkms uninstall -m xt_XOR -v 0.0.1
+dkms unbuild -m xt_XOR -v 0.0.1
+dkms remove -m xt_XOR -v 0.0.1
