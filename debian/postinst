@@ -1,0 +1,4 @@
+#!/bin/bash
+
+dkms build -m xt_XOR -v 0.0.1
+dkms install -m xt_XOR -v 0.0.1
