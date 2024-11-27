@@ -27,7 +27,7 @@ modules_install:
 	make -C $$PWD/kernel $@ 
 	make -C $$PWD/userspace install
 	
-deb:
+deb: all
 	rm -rf $(OUTPUT_PATH)
 	mkdir -p $(PACKETROOT)
 	cp debian/changelog debian/control debian/copyright debian/postinst debian/prerm debian/rules $(DESTDIR)/debian/
