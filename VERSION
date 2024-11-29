@@ -1,4 +1,0 @@
-PACKAGE_NAME=libiptxor
-BUILD_ROOT=/tmp
-ARCH=amd64
-VERSION=0.0.1
